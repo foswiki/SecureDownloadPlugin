@@ -1,0 +1,2 @@
+File::MMagic,>0,cpan,Required
+Foswiki::Contrib::XSendFileContrib,>0,perl,Optional

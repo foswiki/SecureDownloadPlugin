@@ -1,0 +1,7 @@
+data/System/SecureDownloadPlugin.txt 0644
+data/System/SecureDownloads.txt 0644
+lib/Foswiki/Plugins/SecureDownloadPlugin/Config.spec 0644
+lib/Foswiki/Plugins/SecureDownloadPlugin/Core.pm 0644
+lib/Foswiki/Plugins/SecureDownloadPlugin/DEPENDENCIES 0644
+lib/Foswiki/Plugins/SecureDownloadPlugin.pm 0644
+pub/System/SecureDownloads/zoology_nasc_bc.jpg 0644

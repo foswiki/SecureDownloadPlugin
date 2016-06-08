@@ -1,0 +1,18 @@
+%META:TOPICINFO{author="ProjectContributor" comment="" date="1465399877" format="1.1"  version="1"}%
+%META:TOPICPARENT{name="SecureDownloadPlugin"}%
+---+!! %TOPIC%
+
+Attachments to this topic will be accessible by via [[%SYSTEMWEB%.SecureDownloadPlugin][SECURL]]. 
+
+Example: 
+
+<verbatim class="tml">
+%IMAGE{"zoology_nasc_bc.jpg" size="200" href="%SECURL{"zoology_nasc_bc.jpg"}%"}%
+</verbatim>
+
+%IMAGE{"zoology_nasc_bc.jpg" size="200" href="%SECURL{"zoology_nasc_bc.jpg"}%"}%
+
+%META:FILEATTACHMENT{name="zoology_nasc_bc.jpg" attachment="zoology_nasc_bc.jpg" attr="" comment="" date="1465399877" size="29892" user="ProjectContributor" version="1"}%
+%META:TOPICMOVED{by="micha" date="1465394737" from="Sandbox.SecureDownloads" to="System.SecureDownloads"}%
+%META:PREFERENCE{name="ALLOWTOPICVIEW" title="ALLOWTOPICVIEW" type="Set" value="AdminUser"}%
+%META:PREFERENCE{name="PERMSET_VIEW" title="PERMSET_VIEW" type="Local" value="nobody"}%

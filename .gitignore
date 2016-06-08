@@ -1,0 +1,10 @@
+*,v
+igp_*
+genpdf_*
+/SecureDownloadPlugin_installer
+/SecureDownloadPlugin_installer.pl
+/SecureDownloadPlugin.md5
+/SecureDownloadPlugin.sha1
+/SecureDownloadPlugin.tgz
+/SecureDownloadPlugin.txt
+/SecureDownloadPlugin.zip

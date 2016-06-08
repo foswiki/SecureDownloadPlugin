@@ -1,0 +1,66 @@
+%META:TOPICINFO{author="ProjectContributor" comment="" date="1465399877" format="1.1"  version="1"}%
+---+!! %TOPIC%
+%FORMFIELD{"Description"}%
+
+%TOC%
+
+This plugin is inspired by [[http://www.cyberciti.biz/tips/lighttpd-mod_secdownload-configuration.html][mod_secdownload]] of Lighttpd.
+It creates a secure download area only accessible via unique download URLs that only remain valid for a specified time. This is most
+convenient when protecting downloadable resources with a registration form that has to be filled out before access to them is granted.
+
+---++ Examples
+
+You type:
+
+<verbatim class="tml">
+%IMAGE{
+   "zoology_nasc_bc.jpg" 
+   topic="%SYSTEMWEB%.SecureDownloads" 
+   size="200" 
+   href="%SECURL{"zoology_nasc_bc.jpg"}%"
+}%
+</verbatim>
+
+You get:
+
+%IF{"context ImagePluginEnabled"
+   then="$percntIMAGE{
+      \"zoology_nasc_bc.jpg\" 
+      topic=\"$percntSYSTEMWEB$percnt.SecureDownloads\" 
+      size=\"200\" 
+      href=\"$percntSECURL{\"zoology_nasc_bc.jpg\"}$percnt\"
+   }$percnt"
+   else="<a href='$percntSECURL{\"zoology_nasc_bc.jpg\"}$percnt'><img src='%PUBURLPATH%/%SYSTEMWEB%/SecureDownloads/zoology_nasc_bc.jpg' alt='zoology_nasc_bc.jpg' /></a>"
+}%
+
+---++ Installation Instructions
+
+%$INSTALL_INSTRUCTIONS%
+
+Before using this plugin make sure you properly [[%SCRIPTURL{"configure"}%][configured]] it:
+
+   1 Make sure your web-server has got the =xsendfile= protocol activated. See also Foswiki:Extensions/XSendFileContrib
+   1 Specify a secure download area in =Foswiki::cfg{SecureDownloadPlugin}{DownloadArea}=
+   1 %RED%make sure the download area is VIEW restricted%ENDCOLOR%
+   1 Configure the timespan that a download url is valid in =$Foswiki::cfg{SecureDownloadPlugin}{Timeout}=
+   1 Config a secret to be added to the download token in =$Foswiki::cfg{SecureDownloadPlugin}{Secret}=
+   1 Optionally sepcify a topic or url in =$Foswiki::cfg{SecureDownloadPlugin}{Redirect}= to redirect to once a download token expired
+
+---++ Dependencies
+%$DEPENDENCIES%
+
+---++ Change History
+
+%TABLE{columnwidths="7em" tablewidth="100%"}%
+|  08 Jun 2016 | initial release |
+
+%META:FORM{name="PackageForm"}%
+%META:FIELD{name="Author" title="Author" value="Michael Daum"}%
+%META:FIELD{name="Version" title="Version" value="%25$VERSION%25"}%
+%META:FIELD{name="Release" title="Release" value="%25$RELEASE%25"}%
+%META:FIELD{name="Description" title="Description" value="%25$SHORTDESCRIPTION%25"}%
+%META:FIELD{name="Repository" title="Repository" value="https://github.com/foswiki/%25TOPIC%25"}%
+%META:FIELD{name="Copyright" title="Copyright" value="&copy; 2014-2016 Michael Daum http://michaeldaumconsulting.com"}%
+%META:FIELD{name="License" title="License" value="[[http://www.gnu.org/licenses/gpl.html][GPL (Gnu General Public License)]]"}%
+%META:FIELD{name="Home" title="Home" value="Foswiki:Extensions/%25TOPIC%25"}%
+%META:FIELD{name="Support" title="Support" value="Foswiki:Support/%25TOPIC%25"}%
