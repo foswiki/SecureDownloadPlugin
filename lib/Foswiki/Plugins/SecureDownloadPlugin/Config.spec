@@ -39,18 +39,12 @@ $Foswiki::cfg{SecureDownloadPlugin}{XSendFileHeader} = '';
 # </ul>
 $Foswiki::cfg{SecureDownloadPlugin}{Disposition} = 'redirect';
 
-# **PATH**
-# Location that the http server will process internally to send protected files.
-# Leave it to {PubDir} for Lighttpd; use the <code>/protected_files</code> location
-# as configured for an Nginx.
-$Foswiki::cfg{XSendFileContrib}{Location} = '';
-
 # **STRING**
 # Time in seconds that a secured url is valid.
 $Foswiki::cfg{SecureDownloadPlugin}{Timeout} = 60;
 
 # **PASSWORD H**
 # Hidden secret added to tokens. WARNING: please change default values
-$Foswiki::cfg{SecureDownload}{Secret} = '';
+$Foswiki::cfg{SecureDownloadPlugin}{Secret} = '';
 
 1;

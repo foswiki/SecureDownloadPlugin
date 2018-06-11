@@ -1,3 +1,4 @@
+!noci
 data/System/SecureDownloadPlugin.txt 0644
 data/System/SecureDownloads.txt 0644
 lib/Foswiki/Plugins/SecureDownloadPlugin/Config.spec 0644
