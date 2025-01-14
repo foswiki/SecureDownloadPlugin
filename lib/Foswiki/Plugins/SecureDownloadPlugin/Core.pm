@@ -1,6 +1,6 @@
 # Plugin for Foswiki - The Free and Open Source Wiki, http://foswiki.org/
 #
-# SecureDownloadPlugin is Copyright (C) 2014-2018 Michael Daum http://michaeldaumconsulting.com
+# SecureDownloadPlugin is Copyright (C) 2014-2025 Michael Daum http://michaeldaumconsulting.com
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -14,6 +14,16 @@
 # http://www.gnu.org/copyleft/gpl.html
 
 package Foswiki::Plugins::SecureDownloadPlugin::Core;
+
+=begin TML
+
+---+ package Foswiki::Plugins::SecureDownloadPlugin::Core
+
+core class for this plugin
+
+an singleton instance is allocated on demand
+
+=cut
 
 use strict;
 use warnings;
@@ -31,18 +41,19 @@ use File::MMagic ();
 
 our $mimeTypeInfo;
 our $mmagic;
-use constant TRACE => 0; # toggle me
 
-################################################################################
+use constant TRACE => 0; 
+
 # static
-sub writeDebug {
-  return unless TRACE;
-  #Foswiki::Func::writeDebug("SecureDownloadPlugin::Core - $_[0]");
-  print STDERR "SecureDownloadPlugin - $_[0]\n";
-}
 
-################################################################################
-# constructor
+=begin TML
+
+---++ ClassMethod new() -> $core
+
+constructor for a Core object
+
+=cut
+
 sub new {
   my $class = shift;
 
@@ -58,12 +69,18 @@ sub new {
   return $this;
 }
 
-################################################################################
-# macro implementation
+=begin TML
+
+---++ ObjectMethod SECURL() 
+
+implements the %SECURL macro
+
+=cut
+
 sub SECURL {
   my ($this, $session, $params, $topic, $web) = @_;
 
-  writeDebug("called SECURL()");
+  _writeDebug("called SECURL()");
 
   my $fileName = $params->{_DEFAULT};
   my ($downloadWeb, $downloadTopic) = Foswiki::Func::normalizeWebTopicName(undef, $this->{downloadArea});
@@ -76,8 +93,14 @@ sub SECURL {
   return Foswiki::Func::getScriptUrlPath().'/download/'.$token.'/'.$t_hex.$fileName;
 }
 
-################################################################################
-# secure download service
+=begin TML
+
+---++ ObjectMethod download
+
+secure download service
+
+=cut
+
 sub download {
   my $this = shift;
   my $session = shift;
@@ -85,13 +108,13 @@ sub download {
   my $response = $session->{response};
 
   my $pathInfo = $request->path_info;
-  writeDebug("pathInfo=$pathInfo");
+  _writeDebug("pathInfo=$pathInfo");
 
   my $token;
   my $t_hex;
   my $fileName;
 
-  # check uri format
+  # (1) check uri format
   if ($pathInfo =~ /^\/([a-f0-9]{32})\/([a-f0-9]{8})(.*)$/) {
     $token = $1;
     $t_hex = $2;
@@ -102,10 +125,10 @@ sub download {
     return;
   }
 
-  # check time
+  # (2) check time
   my $t = hex($t_hex);
 
-  writeDebug("token=$token, t_hex=$t_hex, t=$t, fileName=$fileName");
+  _writeDebug("token=$token, t_hex=$t_hex, t=$t, fileName=$fileName");
 
   if ($this->{timeout} && time() - $t > $this->{timeout}) {
     my $redirect = $Foswiki::cfg{SecureDownloadPlugin}{Redirect};
@@ -122,7 +145,7 @@ sub download {
     return;
   }
 
-  # check token
+  # (3) check token
   my $thisToken = md5_hex($this->{secret}, $fileName, $t_hex);
   if ($thisToken ne $token) {
     $response->status(403);
@@ -133,14 +156,14 @@ sub download {
   my ($web, $topic) = Foswiki::Func::normalizeWebTopicName(undef, $this->{downloadArea});
   my $topicObject = Foswiki::Meta->new($session, $web, $topic);
 
-  # check download area exists
+  # (4) check download area exists
   unless ($topicObject->existsInStore()) {
     $response->status(404);
     $response->print("404 - download area does not exist\n");
     return;
   }
 
-  # check file existence
+  # (5) check file existence
   unless ($topicObject->hasAttachment($fileName)) {
     $response->status(404);
     $response->print("404 - $fileName does not exist\n");
@@ -163,8 +186,8 @@ sub download {
   my $lastModified = Foswiki::Time::formatTime($stat[9] || $stat[10] || 0, '$http', 'gmtime');
   my $ifModifiedSince = $request->header('If-Modified-Since') || '';
 
-  writeDebug("filePath=$filePath, fileLocation=$fileLocation");
-  writeDebug("lastModified=$lastModified, ifModifiedSince=$ifModifiedSince");
+  _writeDebug("filePath=$filePath, fileLocation=$fileLocation");
+  _writeDebug("lastModified=$lastModified, ifModifiedSince=$ifModifiedSince");
 
   my $dispositionMode = $Foswiki::cfg{SecureDownloadPlugin}{Disposition} || 'redirect';
 
@@ -175,7 +198,7 @@ sub download {
   } else {
     $response->header(
       -status => 200,
-      -type => mimeTypeOfFile($filePath),
+      -type => _mimeTypeOfFile($filePath),
       -content_disposition => "$dispositionMode; filename=\"$fileName\"",
       $headerName => $fileLocation,
     );
@@ -184,8 +207,8 @@ sub download {
   return;
 }
 
-################################################################################
-sub mimeTypeOfFile {
+# static helper
+sub _mimeTypeOfFile {
   my $fileName = shift;
 
   my $mimeType;
@@ -197,7 +220,7 @@ sub mimeTypeOfFile {
 
     if ($mimeTypeInfo =~ /^([^#]\S*).*?\s$suffix(?:\s|$)/im) {
       $mimeType = $1;
-      writeDebug("mimetypes file says $mimeType to $fileName");
+      _writeDebug("mimetypes file says $mimeType to $fileName");
       return $mimeType;
     }
   }
@@ -207,13 +230,19 @@ sub mimeTypeOfFile {
   $mimeType = $mmagic->checktype_filename($fileName);
 
   if (defined $mimeType && $mimeType ne "x-system/x-error") {
-    writeDebug("mmagic says $mimeType to $fileName");
+    _writeDebug("mmagic says $mimeType to $fileName");
     return $mimeType;
   }
 
-  writeDebug("unknown mime type of $fileName");
+  _writeDebug("unknown mime type of $fileName");
 
   return 'application/octet-stream';
+}
+
+sub _writeDebug {
+  return unless TRACE;
+  #Foswiki::Func::_writeDebug("SecureDownloadPlugin::Core - $_[0]");
+  print STDERR "SecureDownloadPlugin - $_[0]\n";
 }
 
 1;
