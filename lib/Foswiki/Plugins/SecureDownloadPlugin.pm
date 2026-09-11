@@ -1,6 +1,6 @@
 # Plugin for Foswiki - The Free and Open Source Wiki, http://foswiki.org/
 #
-# SecureDownloadPlugin is Copyright (C) 2014-2025 Michael Daum http://michaeldaumconsulting.com
+# SecureDownloadPlugin is Copyright (C) 2014-2026 Michael Daum http://michaeldaumconsulting.com
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -28,7 +28,7 @@ use warnings;
 
 use Foswiki::Func ();
 
-our $VERSION = '1.02';
+our $VERSION = '2.00';
 our $RELEASE = '%$RELEASE%';
 our $SHORTDESCRIPTION = 'Secure, temporary download links';
 our $LICENSECODE = '%$LICENSECODE%';
@@ -44,12 +44,13 @@ initialize the plugin, automatically called during the core initialization proce
 =cut
 
 sub initPlugin {
-  Foswiki::Func::registerTagHandler('SECURL', sub { return getCore()->SECURL(@_); });
 
   unless ($Foswiki::cfg{SecureDownloadPlugin}{Secret}) {
     Foswiki::Func::writeWarning("SecureDownloadPlugin not properly configured: please specify a secret");
     return 0;
   }
+
+  Foswiki::Func::registerTagHandler('SECURL', sub { return getCore()->SECURL(@_); });
 
   return 1;
 
@@ -83,6 +84,7 @@ automatically called during the core initialization process
 =cut
 
 sub finishPlugin {
+  $core->finish() if $core;
   undef $core;
 }
 

@@ -43,7 +43,7 @@ $Foswiki::cfg{SecureDownloadPlugin}{Disposition} = 'redirect';
 # Time in seconds that a secured url is valid.
 $Foswiki::cfg{SecureDownloadPlugin}{Timeout} = 60;
 
-# **PASSWORD H**
+# **PASSWORD**
 # Hidden secret added to tokens. WARNING: please change default values
 $Foswiki::cfg{SecureDownloadPlugin}{Secret} = '';
 

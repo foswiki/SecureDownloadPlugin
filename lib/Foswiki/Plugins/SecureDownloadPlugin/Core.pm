@@ -1,6 +1,6 @@
 # Plugin for Foswiki - The Free and Open Source Wiki, http://foswiki.org/
 #
-# SecureDownloadPlugin is Copyright (C) 2014-2025 Michael Daum http://michaeldaumconsulting.com
+# SecureDownloadPlugin is Copyright (C) 2014-2026 Michael Daum http://michaeldaumconsulting.com
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -37,10 +37,6 @@ BEGIN {
 
 use Foswiki::Func ();
 use Digest::MD5 qw(md5_hex);
-use File::MMagic ();
-
-our $mimeTypeInfo;
-our $mmagic;
 
 use constant TRACE => 0; 
 
@@ -69,6 +65,13 @@ sub new {
   return $this;
 }
 
+sub finish {
+  my $this = shift;
+
+  undef $this->{_mmagic};
+  undef $this->{_mimeTypeInfo};
+}
+
 =begin TML
 
 ---++ ObjectMethod SECURL() 
@@ -80,17 +83,17 @@ implements the %SECURL macro
 sub SECURL {
   my ($this, $session, $params, $topic, $web) = @_;
 
+
   _writeDebug("called SECURL()");
+  $web = $params->{web} if defined $params->{web};
+  $web = undef if $web eq 'default';
 
   my $fileName = $params->{_DEFAULT};
-  my ($downloadWeb, $downloadTopic) = Foswiki::Func::normalizeWebTopicName(undef, $this->{downloadArea});
-  
-  #timestamp
   my $t = time();
   my $t_hex = sprintf("%08x", $t);
   my $token = md5_hex($this->{secret}, $fileName, $t_hex);
 
-  return Foswiki::Func::getScriptUrlPath().'/download/'.$token.'/'.$t_hex.$fileName;
+  return Foswiki::Func::getScriptUrlPath($web, undef, "download").'/'.$token.'/'.$t_hex.$fileName;
 }
 
 =begin TML
@@ -113,12 +116,18 @@ sub download {
   my $token;
   my $t_hex;
   my $fileName;
+  my $downloadWeb;
 
   # (1) check uri format
   if ($pathInfo =~ /^\/([a-f0-9]{32})\/([a-f0-9]{8})(.*)$/) {
     $token = $1;
     $t_hex = $2;
     $fileName = $3;
+  } elsif ($pathInfo =~ /^\/($Foswiki::regex{webNameRegex})\/([a-f0-9]{32})\/([a-f0-9]{8})(.*)$/) {
+    $downloadWeb = $1;
+    $token = $2;
+    $t_hex = $3;
+    $fileName = $4;
   } else {
     $response->status(403);
     $response->print("403 - access denied\n");
@@ -133,7 +142,7 @@ sub download {
   if ($this->{timeout} && time() - $t > $this->{timeout}) {
     my $redirect = $Foswiki::cfg{SecureDownloadPlugin}{Redirect};
     if ($redirect) {
-      unless ($redirect =~ /^http:/) {
+      unless ($redirect =~ /^https?:/) {
         my ($web, $topic) = Foswiki::Func::normalizeWebTopicName(undef, $redirect);
         $redirect = Foswiki::Func::getScriptUrl($web, $topic, "view");
       }
@@ -153,8 +162,19 @@ sub download {
     return;
   }
 
-  my ($web, $topic) = Foswiki::Func::normalizeWebTopicName(undef, $this->{downloadArea});
-  my $topicObject = Foswiki::Meta->new($session, $web, $topic);
+  my $downloadTopic;
+
+  if ($downloadWeb) {
+    $downloadTopic = Foswiki::Func::getPreferencesValue("SECUREDOWNLOADS", $downloadWeb);
+    ($downloadWeb, $downloadTopic) = Foswiki::Func::normalizeWebTopicName($downloadWeb, $downloadTopic)
+      if $downloadTopic;
+  } 
+
+  ($downloadWeb, $downloadTopic) = Foswiki::Func::normalizeWebTopicName(undef, $this->{downloadArea})
+    unless $downloadTopic;
+
+  _writeDebug("downloadWeb=$downloadWeb, downloadTopic=$downloadTopic");
+  my $topicObject = Foswiki::Meta->new($session, $downloadWeb, $downloadTopic);
 
   # (4) check download area exists
   unless ($topicObject->existsInStore()) {
@@ -179,8 +199,8 @@ sub download {
     || $Foswiki::cfg{XSendFileContrib}{Header} 
     || 'X-LIGHTTPD-send-file';
 
-  my $fileLocation = $location.'/'.$web.'/'.$topic.'/'.$fileName;
-  my $filePath = $Foswiki::cfg{PubDir}.'/'.$web.'/'.$topic.'/'.$fileName;
+  my $fileLocation = $location.'/'.$downloadWeb.'/'.$downloadTopic.'/'.$fileName;
+  my $filePath = $Foswiki::cfg{PubDir}.'/'.$downloadWeb.'/'.$downloadTopic.'/'.$fileName;
 
   my @stat = stat($filePath);
   my $lastModified = Foswiki::Time::formatTime($stat[9] || $stat[10] || 0, '$http', 'gmtime');
@@ -198,7 +218,7 @@ sub download {
   } else {
     $response->header(
       -status => 200,
-      -type => _mimeTypeOfFile($filePath),
+      -type => $this->mimeTypeOfFile($filePath),
       -content_disposition => "$dispositionMode; filename=\"$fileName\"",
       $headerName => $fileLocation,
     );
@@ -207,27 +227,56 @@ sub download {
   return;
 }
 
-# static helper
-sub _mimeTypeOfFile {
-  my $fileName = shift;
+sub mmagic {
+  my $this = shift;
+
+  unless ($this->{_mmagic}) {
+
+    eval { require File::MMagic::XS; };
+
+    if ($@) {
+      eval { require File::MMagic; };
+
+      throw Error::Simple("couldn't load File::MMagic or File::MMagic::XS")
+        if $@;
+      
+      $this->{_mmagic} = File::MMagic->new();
+    } else {
+      $this->{_mmagic} = File::MMagic::XS->new();
+    }
+  }
+
+  return $this->{_mmagic};
+}
+
+sub checkMimeType {
+  my ($this, $file) = @_;
+
+  my $mmagic = $this->mmagic;
+
+  return $mmagic->checktype_filename($file)
+    if (ref(mmagic()) eq 'File::MMagic');
+
+  return $mmagic->get_mime($file);
+}
+
+sub mimeTypeOfFile {
+  my ($this, $fileName) = @_;
 
   my $mimeType;
   if ($fileName && $fileName =~ /\.([^.]+)$/) {
     my $suffix = $1;
 
-    $mimeTypeInfo = Foswiki::Func::readFile($Foswiki::cfg{MimeTypesFileName}) 
-      unless defined $mimeTypeInfo;
+    $this->{_mimeTypeInfo} //= Foswiki::Func::readFile($Foswiki::cfg{MimeTypesFileName});
 
-    if ($mimeTypeInfo =~ /^([^#]\S*).*?\s$suffix(?:\s|$)/im) {
+    if ($this->{_mimeTypeInfo} =~ /^([^#]\S*).*?\s$suffix(?:\s|$)/im) {
       $mimeType = $1;
       _writeDebug("mimetypes file says $mimeType to $fileName");
       return $mimeType;
     }
   }
 
-  $mmagic = File::MMagic->new() unless defined $mmagic;
-
-  $mimeType = $mmagic->checktype_filename($fileName);
+  $mimeType = $this->checkMimeType($fileName);
 
   if (defined $mimeType && $mimeType ne "x-system/x-error") {
     _writeDebug("mmagic says $mimeType to $fileName");
@@ -241,8 +290,32 @@ sub _mimeTypeOfFile {
 
 sub _writeDebug {
   return unless TRACE;
-  #Foswiki::Func::_writeDebug("SecureDownloadPlugin::Core - $_[0]");
   print STDERR "SecureDownloadPlugin - $_[0]\n";
+  #Foswiki::Func::_writeDebug("SecureDownloadPlugin::Core - $_[0]");
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 1;
